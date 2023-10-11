@@ -81,9 +81,15 @@ impl IntoResponse for AppError {
 }
 
 mod filters {
-    // This filter requires a `usize` input when called in templates
     pub fn debug(stuff: impl std::fmt::Debug) -> ::askama::Result<String> {
         Ok(format!("{:?}", stuff))
+    }
+
+    pub fn debug_or_empty(stuff: &Option<impl std::fmt::Debug>) -> ::askama::Result<String> {
+        if let Some(inner) = stuff {
+            return Ok(format!("{:?}", inner));
+        }
+        Ok("".into())
     }
 }
 
@@ -105,7 +111,7 @@ async fn root(State(state): State<AppState>) -> IndexTemplate {
         .unwrap();
     let content = resp.json::<GetAllDevicesResponse>().await.unwrap();
     IndexTemplate {
-        now: Local::now().to_rfc3339().into(),
+        now: Local::now().to_rfc3339(),
         devices: content.devices,
     }
 }
