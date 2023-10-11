@@ -18,7 +18,7 @@
             <tbody>
                 {%- for device in devices %}
                 <tr>
-                    <td>{% if device.alias.is_some() %}{{device.alias.as_ref().unwrap()}}{% endif %}</td>
+                    <td>{{device.alias.as_ref().unwrap_or("")}}</td>
                     <td>{{device.online_state|debug}}</td>
                     <td>{% if device.last_seen.is_some() %}{{device.last_seen.as_ref().unwrap()}}{% endif %}</td>
                     <td>{% if device.description.is_some() %}{{device.description.as_ref().unwrap()}}{% endif %}
