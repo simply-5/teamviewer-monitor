@@ -80,19 +80,6 @@ impl IntoResponse for AppError {
     }
 }
 
-mod filters {
-    pub fn debug(stuff: impl std::fmt::Debug) -> ::askama::Result<String> {
-        Ok(format!("{:?}", stuff))
-    }
-
-    pub fn debug_or_empty(stuff: &Option<impl std::fmt::Debug>) -> ::askama::Result<String> {
-        if let Some(inner) = stuff {
-            return Ok(format!("{:?}", inner));
-        }
-        Ok("".into())
-    }
-}
-
 #[derive(Template)] // this will generate the code...
 #[template(path = "index.html")] // using the template in this path, relative
                                  // to the `templates` dir in the crate root
