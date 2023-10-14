@@ -16,25 +16,23 @@
                 </tr>
             </thead>
             <tbody>
-                {%- for device in devices %}
+                {% for device in devices %}
                 <tr>
-                    <td>{{ device.alias.as_deref().unwrap_or("") }}</td>
-                    <td>{{ "{:?}"|format(device.online_state) }}</td>
+                    <td>{% device.alias.as_deref().unwrap_or("") %}</td>
+                    <td>{% format!("{:?}", device.online_state) %}</td>
                     <td>
-                        {%- match device.last_seen -%}
-                        {%- when Some with (val) -%}
-                        {{ "{:?}"|format(val) }}
-                        {%- when None -%}
-                        {%- endmatch -%}
+                        {% if let Some(val) = device.last_seen %}
+                        {% format!("{:?}", val) %}
+                        {% end %}
                     </td>
-                    <td>{{ device.description.as_deref().unwrap_or("") }}</td>
-                    <td>{{ device.remotecontrol_id.as_deref().unwrap_or("") }}</td>
-                    <td>{{ device.device_id.as_deref().unwrap_or("") }}</td>
-                    <td>{{ device.teamviewer_id.unwrap_or(0) }}</td>
+                    <td>{% device.description.as_deref().unwrap_or("") %}</td>
+                    <td>{% device.remotecontrol_id.as_deref().unwrap_or("") %}</td>
+                    <td>{% device.device_id.as_deref().unwrap_or("") %}</td>
+                    <td>{% device.teamviewer_id.unwrap_or(0) %}</td>
                 </tr>
-                {%- endfor %}
+                {% end %}
             </tbody>
         </table>
     </div>
 </div>
-{% endblock %}
+{% end %}

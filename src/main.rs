@@ -1,8 +1,7 @@
-use askama_axum::Template;
 use axum::{
     extract::State,
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::{Html, IntoResponse, Response},
     routing::get,
     Router,
 };
@@ -11,6 +10,7 @@ use listenfd::ListenFd;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::env;
+use stilts::Template;
 use tower_http::services::ServeDir;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -80,27 +80,27 @@ impl IntoResponse for AppError {
     }
 }
 
-#[derive(Template)] // this will generate the code...
-#[template(path = "index.html")] // using the template in this path, relative
-                                 // to the `templates` dir in the crate root
+#[derive(Template)]
+#[stilts(path = "index.html")]
 struct IndexTemplate {
-    now: String,
     devices: Vec<GetDeviceResponse>,
 }
 
-async fn root(State(state): State<AppState>) -> IndexTemplate {
+async fn root(State(state): State<AppState>) -> Result<Html<String>, AppError> {
     let resp = state
         .client
         .get("https://webapi.teamviewer.com/api/v1/devices")
         .bearer_auth(state.teamviewer_token)
         .send()
-        .await
-        .unwrap();
-    let content = resp.json::<GetAllDevicesResponse>().await.unwrap();
-    IndexTemplate {
-        now: Local::now().to_rfc3339(),
-        devices: content.devices,
-    }
+        .await?;
+    let content = resp.json::<GetAllDevicesResponse>().await?;
+    Ok(Html(
+        IndexTemplate {
+            devices: content.devices,
+        }
+        .render()
+        .expect("Template render should not fail"),
+    ))
 }
 
 #[tokio::main(flavor = "current_thread")]
