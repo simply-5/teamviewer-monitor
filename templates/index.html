@@ -17,7 +17,7 @@
             </thead>
             <tbody>
                 {% for device in devices %}
-                <tr>
+                <tr {% if let OnlineState::Offline=device.online_state %} class="table-warning" {% end %}>
                     <td>{% device.alias.as_deref().unwrap_or("") %}</td>
                     <td>{% format!("{:?}", device.online_state) %}</td>
                     <td>
