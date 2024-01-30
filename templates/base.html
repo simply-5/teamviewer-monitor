@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{# TODO try a cleaner css solution for full height, also see body and main #}
+{% { /* TODO try a cleaner css solution for full height, also see body and main */ } %}
 <html lang="en" class="h-100">
 
 <head>
@@ -30,7 +30,7 @@
     <div class="container">
       <div class="navbar-text">
         Last update:
-        {{ now }}
+        {% now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true) %}
       </div>
     </div>
   </footer>

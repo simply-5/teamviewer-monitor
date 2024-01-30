@@ -5,7 +5,7 @@ use axum::{
     routing::get,
     Router,
 };
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 use listenfd::ListenFd;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -84,6 +84,7 @@ impl IntoResponse for AppError {
 #[stilts(path = "index.html")]
 struct IndexTemplate {
     devices: Vec<GetDeviceResponse>,
+    now: DateTime<Utc>,
 }
 
 async fn root(State(state): State<AppState>) -> Result<Html<String>, AppError> {
@@ -97,6 +98,7 @@ async fn root(State(state): State<AppState>) -> Result<Html<String>, AppError> {
     Ok(Html(
         IndexTemplate {
             devices: content.devices,
+            now: Utc::now(),
         }
         .render()
         .expect("Template render should not fail"),
