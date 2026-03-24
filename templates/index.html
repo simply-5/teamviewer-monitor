@@ -20,15 +20,15 @@
                 <tr {% if let OnlineState::Offline=device.online_state %} class="table-warning" {% end %}>
                     <td>{% device.alias.as_deref().unwrap_or("") %}</td>
                     <td>{% format!("{:?}", device.online_state) %}</td>
-                    <td>
+                    <td class="text-nowrap">
                         {% if let Some(val) = device.last_seen %}
                         {% format!("{:?}", val) %}
                         {% end %}
                     </td>
                     <td>{% device.description.as_deref().unwrap_or("") %}</td>
-                    <td>{% device.remotecontrol_id.as_deref().unwrap_or("") %}</td>
-                    <td>{% device.device_id.as_deref().unwrap_or("") %}</td>
-                    <td>{% device.teamviewer_id.unwrap_or(0) %}</td>
+                    <td><code>{% device.remotecontrol_id.as_deref().unwrap_or("") %}</code></td>
+                    <td><code>{% device.device_id.as_deref().unwrap_or("") %}</code></td>
+                    <td><code>{% device.teamviewer_id.unwrap_or(0) %}</code></td>
                 </tr>
                 {% end %}
             </tbody>

@@ -5,7 +5,7 @@ use axum::{
     routing::get,
     Router,
 };
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Utc};
 use listenfd::ListenFd;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -34,7 +34,7 @@ struct GetDeviceResponse {
     policy_id: Option<String>,
     assigned_to: Option<bool>,
     supported_features: Option<String>,
-    last_seen: Option<DateTime<Local>>,
+    last_seen: Option<DateTime<Utc>>,
     teamviewer_id: Option<i64>,
 }
 
