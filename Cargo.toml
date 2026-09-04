@@ -8,9 +8,12 @@ edition = "2021"
 [dependencies]
 axum = "0.6.20"
 chrono = { version = "0.4.26", default-features = false, features = ["serde", "clock"] }
+# Already pulled in by axum; named here for the Accept trait,
+# which is what serving on a Unix socket goes through
+hyper = { version = "0.14", features = ["server"] }
 listenfd = "1.0.1"
 reqwest = { version = "0.11.18", features = ["json"] }
 serde = { version = "1.0.183", features = ["derive"] }
 stilts = "0.2.1"
-tokio = { version = "1.30.0", features = ["rt", "macros"] }
+tokio = { version = "1.30.0", features = ["rt", "macros", "net"] }
 tower-http = { version = "0.4.3", features = ["fs"] }
