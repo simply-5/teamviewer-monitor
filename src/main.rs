@@ -6,11 +6,16 @@ use axum::{
     Router,
 };
 use chrono::{DateTime, Utc};
+use hyper::server::accept::Accept;
 use listenfd::ListenFd;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::env;
+use std::io;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use stilts::Template;
+use tokio::net::{UnixListener, UnixStream};
 use tower_http::services::ServeDir;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -118,13 +123,58 @@ async fn main() {
         .nest_service("/static", ServeDir::new("static"))
         .with_state(state);
 
-    let server_builder = if let Ok(Some(listener)) = ListenFd::from_env().take_tcp_listener(0) {
-        eprintln!("Using socket");
-        axum::Server::from_tcp(listener).unwrap()
+    let mut listenfd = ListenFd::from_env();
+
+    // Whichever listener the socket unit opened is the one to serve on,
+    // and a Unix socket is tried first because that is what the deployment
+    // hands over - nothing but the reverse proxy in front can reach it,
+    // and no port is occupied for it.
+    // The bound address is a last resort for running this by hand,
+    // and deliberately still the one it always was.
+    if let Ok(Some(listener)) = listenfd.take_unix_listener(0) {
+        eprintln!("Using inherited Unix socket");
+        listener
+            .set_nonblocking(true)
+            .expect("Inherited socket should accept non-blocking mode");
+        let listener =
+            UnixListener::from_std(listener).expect("Inherited socket should be a valid listener");
+        axum::Server::builder(UnixAccept(listener))
+            .serve(app.into_make_service())
+            .await
+    } else if let Ok(Some(listener)) = listenfd.take_tcp_listener(0) {
+        eprintln!("Using inherited TCP socket");
+        axum::Server::from_tcp(listener)
+            .unwrap()
+            .serve(app.into_make_service())
+            .await
     } else {
         eprintln!("Using :3000");
         axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-    };
+            .serve(app.into_make_service())
+            .await
+    }
+    .unwrap()
+}
 
-    server_builder.serve(app.into_make_service()).await.unwrap()
+/// Hands accepted Unix socket connections to hyper.
+///
+/// hyper drives a listener through [`Accept`],
+/// which it implements for the TCP listener behind `Server::from_tcp`
+/// and for nothing else - this is that trait for a Unix socket.
+struct UnixAccept(UnixListener);
+
+impl Accept for UnixAccept {
+    type Conn = UnixStream;
+    type Error = io::Error;
+
+    fn poll_accept(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<Self::Conn, Self::Error>>> {
+        // The listener never stops yielding connections,
+        // so the stream never ends and None is never returned
+        self.0
+            .poll_accept(cx)
+            .map(|connection| Some(connection.map(|(stream, _address)| stream)))
+    }
 }
