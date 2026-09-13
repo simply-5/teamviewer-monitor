@@ -5,7 +5,7 @@ use axum::{
     routing::get,
     Router,
 };
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use listenfd::ListenFd;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -34,7 +34,7 @@ struct GetDeviceResponse {
     policy_id: Option<String>,
     assigned_to: Option<bool>,
     supported_features: Option<String>,
-    last_seen: Option<DateTime<Utc>>,
+    last_seen: Option<Timestamp>,
     teamviewer_id: Option<i64>,
 }
 
@@ -84,7 +84,7 @@ impl IntoResponse for AppError {
 #[stilts(path = "index.html")]
 struct IndexTemplate {
     devices: Vec<GetDeviceResponse>,
-    now: DateTime<Utc>,
+    now: Timestamp,
 }
 
 async fn root(State(state): State<AppState>) -> Result<Html<String>, AppError> {
@@ -98,7 +98,7 @@ async fn root(State(state): State<AppState>) -> Result<Html<String>, AppError> {
     Ok(Html(
         IndexTemplate {
             devices: content.devices,
-            now: Utc::now(),
+            now: Timestamp::now(),
         }
         .render()
         .expect("Template render should not fail"),
@@ -118,13 +118,35 @@ async fn main() {
         .nest_service("/static", ServeDir::new("static"))
         .with_state(state);
 
-    let server_builder = if let Ok(Some(listener)) = ListenFd::from_env().take_tcp_listener(0) {
-        eprintln!("Using socket");
-        axum::Server::from_tcp(listener).unwrap()
+    // Prefer a socket handed over via systemd socket activation (listenfd).
+    // A Unix socket is tried first, then an inherited TCP listener, and finally
+    // we fall back to binding 0.0.0.0:3000 ourselves.
+    let mut listenfd = ListenFd::from_env();
+
+    // A type mismatch (e.g. asking for a Unix socket when a TCP one was passed)
+    // yields `Err` and leaves the fd in place, so `if let Ok(Some(_))` both
+    // consumes the right kind and falls through to the next candidate.
+    if let Ok(Some(listener)) = listenfd.take_unix_listener(0) {
+        eprintln!("Using inherited Unix socket");
+        listener
+            .set_nonblocking(true)
+            .expect("Failed to set inherited Unix socket to non-blocking");
+        let listener = tokio::net::UnixListener::from_std(listener)
+            .expect("Failed to adopt inherited Unix socket");
+        axum::serve(listener, app).await.unwrap();
+    } else if let Ok(Some(listener)) = listenfd.take_tcp_listener(0) {
+        eprintln!("Using inherited TCP socket");
+        listener
+            .set_nonblocking(true)
+            .expect("Failed to set inherited TCP socket to non-blocking");
+        let listener = tokio::net::TcpListener::from_std(listener)
+            .expect("Failed to adopt inherited TCP socket");
+        axum::serve(listener, app).await.unwrap();
     } else {
         eprintln!("Using :3000");
-        axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-    };
-
-    server_builder.serve(app.into_make_service()).await.unwrap()
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+            .await
+            .expect("Failed to bind 0.0.0.0:3000");
+        axum::serve(listener, app).await.unwrap();
+    }
 }
