@@ -5,7 +5,7 @@ use axum::{
     routing::get,
     Router,
 };
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use listenfd::ListenFd;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -34,7 +34,7 @@ struct GetDeviceResponse {
     policy_id: Option<String>,
     assigned_to: Option<bool>,
     supported_features: Option<String>,
-    last_seen: Option<DateTime<Utc>>,
+    last_seen: Option<Timestamp>,
     teamviewer_id: Option<i64>,
 }
 
@@ -84,7 +84,7 @@ impl IntoResponse for AppError {
 #[stilts(path = "index.html")]
 struct IndexTemplate {
     devices: Vec<GetDeviceResponse>,
-    now: DateTime<Utc>,
+    now: Timestamp,
 }
 
 async fn root(State(state): State<AppState>) -> Result<Html<String>, AppError> {
@@ -98,7 +98,7 @@ async fn root(State(state): State<AppState>) -> Result<Html<String>, AppError> {
     Ok(Html(
         IndexTemplate {
             devices: content.devices,
-            now: Utc::now(),
+            now: Timestamp::now(),
         }
         .render()
         .expect("Template render should not fail"),

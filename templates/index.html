@@ -22,7 +22,7 @@
                     <td>{% format!("{:?}", device.online_state) %}</td>
                     <td class="text-nowrap">
                         {% if let Some(val) = device.last_seen %}
-                        {% format!("{:?}", val) %}
+                        {% val %}
                         {% end %}
                     </td>
                     <td>{% device.description.as_deref().unwrap_or("") %}</td>
