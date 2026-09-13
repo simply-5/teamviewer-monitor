@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.6.20"
-chrono = { version = "0.4.26", default-features = false, features = ["serde", "clock"] }
-listenfd = "1.0.1"
-reqwest = { version = "0.11.18", features = ["json"] }
-serde = { version = "1.0.183", features = ["derive"] }
-stilts = "0.2.1"
-tokio = { version = "1.30.0", features = ["rt", "macros"] }
-tower-http = { version = "0.4.3", features = ["fs"] }
+axum = "0.8.9"
+chrono = { version = "0.4.45", default-features = false, features = ["serde", "clock"] }
+listenfd = "1.0.2"
+reqwest = { version = "0.13.5", features = ["json"] }
+serde = { version = "1.0.229", features = ["derive"] }
+stilts = "0.3.3"
+tokio = { version = "1.53.1", features = ["rt", "macros", "net"] }
+tower-http = { version = "0.7.1", features = ["fs"] }
